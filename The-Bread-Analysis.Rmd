@@ -1,0 +1,260 @@
+---
+title: "The Bread Sales Analysis"
+author: "Muhammad Satrio Pinoto Negoro"
+date: "10/05/2022"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    theme: readable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Background {.tabset}
+![](thebreadbasket.png)
+
+
+### The Bread Basket
+Like many outstanding American businesses, The Bread Basket literally has its roots in hearth, home, and friends. Here is how it all began, in the words of founder, Marie Hyde.
+
+In 1989, they expanded their business by moving from our kitchen to a small shop nearby. In 1993, they built and relocated to our main facility, a beautiful 6,000 square foot building on Signal Mountain in Tennessee. It was then that her husband, Charlie, left his job, as a corporate executive, to help manage the business. Under his guidance, The Bread Basket is a thriving company, with two locations in the Chattanooga area. We deliver our gift baskets locally and ship nationwide.
+
+### Dataset
+
+The dataset belongs to "The Bread Basket" a bakery located in Edinburgh. The dataset has 20507 entries, over 9000 transactions, and 4 columns.
+
+The dataset has transactions of customers who ordered different items from this bakery online and the time period of the data is from 26-01-11 to 27-12-03.
+
+The Dataset published on [Kaggle](https://www.kaggle.com/datasets/mittalvasu95/the-bread-basket)
+
+## Importing Data
+Make sure our data placed in the same folder our R project data.
+```{r}
+bread <- read.csv("data_input/thebreadbasket.csv")
+head(bread)
+```
+
+## Data Cleansing & Coertions
+**Check Datatypes**
+
+make sure the data clean and ready to use.
+```{r}
+str(bread)
+```
+
+There is some datatype that not appropriate. The datatype that we should change,
+
+1. Date_time to date
+2. period_day and weekday_weekend to factor
+
+
+### Change Datatype
+**Import Packages**
+```{r}
+library(dplyr)
+library(lubridate)
+```
+
+**Change Data Types**
+```{r}
+bread_clean <- 
+  bread %>% 
+  mutate(date_time = dmy_hm(date_time),
+         Item = as.factor(Item),
+         period_day = as.factor(period_day),
+         weekday_weekend = as.factor(weekday_weekend),
+         Year = year(date_time),
+         Month = months(date_time))
+
+```
+```{r}
+glimpse(bread_clean)
+```
+
+Each of column already changed into desired data type
+
+
+**Checking Missing Value**
+```{r}
+colSums(is.na(bread_clean))
+```
+```{r}
+anyNA(bread_clean)
+```
+Great!! we haven't Missing Values
+
+Now, The bread basket dataset is ready to be processed and analyzed
+
+## Data Explanation 
+**First, we can use `summary()` function to know the data**
+
+```{r}
+summary(bread_clean)
+```
+
+
+**SUMMARY**
+
+1. From the data, the first order recorded on October 30, 2016.
+2. There are 9684 transactions recorded.
+3. Sales that occurred on weekdays were 12807 transactions while on weekends 7700 transactions.
+4. Most transactions occur in the afternoon and the lowest at night.
+5. Coffee became the product with the most sales with 5471 transactions.
+
+## Business Needs
+Now, to help The Bread Basket increase its sales, we can answer questions that can be useful information for them
+
+###  1. What products sold the most in 2017
+Answer:
+
+First, we need to subset the data for the `Year` in **2017**
+
+```{r}
+bread_2017 <- bread_clean[bread_clean$Year == 2017,]
+
+```
+
+And now, we can create a new data table for looking at which product sold the most in 2017.
+
+```{r}
+bread_most <- as.data.frame(sort(table(bread_2017$Item),decreasing = T))
+names(bread_most)[1] <- paste("Products")
+names(bread_most)[2] <- paste("Quantity")
+
+head(bread_most,10)
+```
+```{r}
+library(ggplot2)
+
+ggplot(head(bread_most,10), aes(x = Products, y = Quantity))+
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Most sold products in 2017")
+```
+
+Hence, Coffee and Bread are the most sold products in 2017.
+
+
+### 2. What products seld the most on the weekend?
+Answer:
+
+First, we need to subset the data for the `weekday_weekend` on **Weekend**
+
+```{r}
+bread_weekend <- bread_clean[bread_clean$weekday_weekend == "weekend",]
+```
+
+And now, we can create a new data table for looking at which product sold the most on Weekend.
+
+```{r}
+weekend_most <- as.data.frame(sort(table(bread_weekend$Item),decreasing = T))
+names(weekend_most)[1] <- paste("Products")
+names(weekend_most)[2] <- paste("Quantity")
+
+head(weekend_most,10)
+```
+```{r}
+ggplot(head(weekend_most,10), aes(x = Products, y = Quantity))+
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Most sold products on Weekend")
+```
+
+Hence, Coffee and Bread are the most sold products on Weekend.
+
+### 3. In what month did the most sales occur?
+Answer:
+
+```{r}
+month_most <- as.data.frame(sort(table(bread_weekend$Month),decreasing = T))
+names(month_most)[1] <- paste("Months")
+names(month_most)[2] <- paste("Quantity")
+
+head(month_most)
+```
+```{r}
+ggplot(month_most, aes(x = Months, y = Quantity))+
+  geom_bar(stat = "identity") +
+  labs(title = "Months with The Most Sales")
+```
+
+Hence,November is the Month with The Most Sales.
+
+
+### 4. Most sales of `Bread` occur in what period of the day?
+Answer:
+
+First, we need to subset the data for the `Item` to  **Bread**
+
+```{r}
+item_bread <- bread_clean[bread_clean$Item == "Bread",]
+```
+
+And now, we can create a new data table for looking at which period of the day that sold the most `Bread` product.
+
+```{r}
+bread_most <- as.data.frame(sort(table(item_bread$period_day),decreasing = T))
+names(bread_most)[1] <- paste("Period Day")
+names(bread_most)[2] <- paste("Quantity")
+
+head(bread_most,10)
+```
+```{r}
+ggplot(bread_most, aes(x = `Period Day`, y = Quantity))+
+  geom_bar(stat = "identity") +
+  labs(title = "Period of Days with the Most Sales of Bread products")
+```
+
+Hence, Afternoon is Period of Days with the Most Sales of Bread products.
+
+
+### 5. Most sales of `Tea` occur in what period of the day?
+Answer:
+
+First, we need to subset the data for the `Item` to  **Tea**
+
+```{r}
+item_tea <- bread_clean[bread_clean$Item == "Tea",]
+```
+
+And now, we can create a new data table for looking at which period of the day that sold the most `Tea` product.
+
+```{r}
+tea_most <- as.data.frame(sort(table(item_tea$period_day),decreasing = T))
+names(tea_most)[1] <- paste("Period Day")
+names(tea_most)[2] <- paste("Quantity")
+
+head(tea_most,10)
+```
+```{r}
+ggplot(tea_most, aes(x = `Period Day`, y = Quantity))+
+  geom_bar(stat = "identity") +
+  labs(title = "Period of Days with the Most Sales of Tea products")
+```
+
+Hence, Afternoon is Period of Days with the Most Sales of Tea products.
+
+## Conclusion
+In almost 6 months recorded from October 2016 to April 2017 The Bread Basket has had 9684 sales transactions. The Bread Basket has several products on its menu, such as Coffee, Bread, Tea, Cake, Pastry, and others. The Bread Basket has several favorite menus, namely Coffee, Bread, and Tea, with total sales transactions of 5471, 3325, and 1435, respectively. The Bread Basket also has the most sales in the afternoon and the morning. And most of the sales transactions for The Bread Basket occur on weekdays.
+
+In sales in 2017, Coffee, Bread, and Tea became the products with the most sales. And in sales on the Weekend, Coffee, Bread, and Tea also became the products with the most sales
+
+## Reference
+
+1. [The Bread Basket](https://www.breadbasket.com/about/Default.aspx)
+
+## About Me
+
+[Muhammad Satrio Pinoto Negoro](https://www.linkedin.com/in/muhammadsatriopinotonegoro/)
+
+[Source Code](https://github.com/satriopino/LBB-TheBreadBasket-Analysis)
+
+
+
+
+
+
+
